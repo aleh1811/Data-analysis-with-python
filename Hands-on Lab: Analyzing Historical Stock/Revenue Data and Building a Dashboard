@@ -1,0 +1,86 @@
+import yfinance as yf
+import pandas as pd
+import matplotlib_inline
+import requests
+import json
+from bs4 import BeautifulSoup
+import os 
+from PIL import Image
+from IPython.display import IFrame
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+
+
+def make_graph(stock_data, revenue_data, stock):
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, subplot_titles=("Historical Share Price", "Historical Revenue"), vertical_spacing = .3)
+    stock_data_specific = stock_data[stock_data.Date <= '2021--06-14']
+    revenue_data_specific = revenue_data[revenue_data.Date <= '2021-04-30']
+    fig.add_trace(go.Scatter(x=pd.to_datetime(stock_data_specific.Date), y=stock_data_specific.Close.astype("float"), name="Share Price"), row=1, col=1)
+    fig.add_trace(go.Scatter(x=pd.to_datetime(revenue_data_specific.Date), y=revenue_data_specific.Revenue.astype("float"), name="Revenue"), row=2, col=1)
+    fig.update_xaxes(title_text="Date", row=1, col=1)
+    fig.update_xaxes(title_text="Date", row=2, col=1)
+    fig.update_yaxes(title_text="Price ($US)", row=1, col=1)
+    fig.update_yaxes(title_text="Revenue ($US Millions)", row=2, col=1)
+    fig.update_layout(showlegend=False,
+    height=900,
+    title=stock,
+    xaxis_rangeslider_visible=True)
+    fig.show()
+
+# Question 1
+
+# using the ticker function, extract the tesla stock information 
+tesla = yf.Ticker("TSLA")
+tesla_full_period = tesla.history(period="max")
+tesla_full_period.reset_index(inplace=True)
+tesla_full_period.head()
+
+# Question 2
+
+url= "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0220EN-SkillsNetwork/labs/project/revenue.htm"
+
+r=requests.get(url)
+
+# Check if the request was successful
+if r.status_code == 200:
+    # Get the HTML content of the page
+    html_data  = r.text
+
+soup = BeautifulSoup(html_data, 'html.parser')
+
+tables = pd.read_html(url)
+
+
+tesla_revenue = pd.DataFrame(tables[1])
+tesla_revenue = tesla_revenue.rename(columns={"Tesla Quarterly Revenue (Millions of US $)": "Date", "Tesla Quarterly Revenue (Millions of US $).1": "Revenue"})
+tesla_revenue["Revenue"] = tesla_revenue['Revenue'].str.replace(',|\$',"", regex=True)
+tesla_revenue = tesla_revenue.dropna().reset_index(drop=True)
+tesla_revenue.tail()
+
+Question 3
+
+gamespot = yf.Ticker("GME")
+gamespot_full_period = gamespot.history(period="max")
+gamespot_full_period.reset_index(inplace=True)
+gamespot_full_period.head()
+
+Question 4
+
+url2= "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0220EN-SkillsNetwork/labs/project/stock.html"
+r2=requests.get(url2)
+html_data2  = r2.text
+soup2 = BeautifulSoup(html_data2, 'html.parser')
+tables2 = pd.read_html(url2)
+gme_revenue = pd.DataFrame(tables2[1])
+gme_revenue = gme_revenue.rename(columns={"GameStop Quarterly Revenue (Millions of US $)": "Date", "GameStop Quarterly Revenue (Millions of US $).1": "Revenue"})
+gme_revenue["Revenue"] = gme_revenue['Revenue'].str.replace(',|\$',"", regex=True)
+gme_revenue = gme_revenue.dropna().reset_index(drop=True)
+gme_revenue.tail()
+
+Question 5
+
+make_graph(tesla_full_period, tesla_revenue, "Tesla")
+
+Question 6
+
+make_graph(gamespot_full_period, gme_revenue, 'GameStop')
